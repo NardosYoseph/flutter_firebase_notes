@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 
 import 'route_constants.dart';
@@ -13,7 +14,24 @@ final GoRouter router = GoRouter(
   initialLocation: RouteConstants.login.toPath,
   debugLogDiagnostics: true,
 
-  redirect: (context, state) => null,
+  redirect: (context, state) {
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final location = state.matchedLocation;
+
+    final isLoginRoute = location == RouteConstants.login.toPath;
+    final isSignUpRoute = location == RouteConstants.signUp.toPath;
+    final isAuthRoute = isLoginRoute || isSignUpRoute;
+
+    if (!isLoggedIn && !isAuthRoute) {
+      return RouteConstants.login.toPath;
+    }
+
+    if (isLoggedIn && isAuthRoute) {
+      return RouteConstants.notes.toPath;
+    }
+
+    return null;
+  },
   errorBuilder: (context, state) => Container(),
  
   routes: [
@@ -46,7 +64,8 @@ final GoRouter router = GoRouter(
       path: RouteConstants.noteEdit.toPath,
       name: RouteConstants.noteEdit.name,
       builder: (context, state) {
-        return const NoteEditorPage();
+        final noteId = state.pathParameters['noteId'];
+        return NoteEditorPage(noteId: noteId);
       },
     ),
   ],
